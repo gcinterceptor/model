@@ -53,5 +53,16 @@
 	    <artifactId>jfreechart</artifactId>
 	    <version>1.0.14</version>
 	</dependency>	
+	<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+	<dependency>
+	    <groupId>com.google.guava</groupId>
+	    <artifactId>guava</artifactId>
+	    <version>28.2-jre</version>
+	</dependency>
+	<dependency>
+	  <groupId>org.ejml</groupId>
+	  <artifactId>ejml-all</artifactId>
+	  <version>0.37.1</version>
+	</dependency>
   </dependencies>
 </project>
