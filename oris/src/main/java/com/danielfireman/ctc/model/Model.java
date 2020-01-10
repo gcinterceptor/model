@@ -1,3 +1,5 @@
+package com.danielfireman.ctc.model;
+
 import java.math.BigDecimal;
 import org.oristool.models.pn.Priority;
 import org.oristool.models.stpn.MarkingExpr;
