@@ -1,6 +1,7 @@
 package com.danielfireman.ctc.model;
 
 import java.math.BigDecimal;
+
 import org.oristool.models.pn.Priority;
 import org.oristool.models.stpn.MarkingExpr;
 import org.oristool.models.stpn.trees.StochasticTransitionFeature;
@@ -14,11 +15,11 @@ public class Model {
   public static void build(PetriNet net, Marking marking) {
 
     //Generating Nodes
-    Place Available = net.addPlace("Available");
-    Place Busy = net.addPlace("Busy");
+    Place Available = net.addPlace("A");
+    Place Busy = net.addPlace("B");
     Place Controller = net.addPlace("Controller");
     Place LB = net.addPlace("LB");
-    Place Unavailable = net.addPlace("Unavailable");
+    Place Unavailable = net.addPlace("U");
     Transition R_Accepted = net.addTransition("R_Accepted");
     Transition R_Arrived = net.addTransition("R_Arrived");
     Transition R_Finished = net.addTransition("R_Finished");
@@ -27,18 +28,18 @@ public class Model {
     Transition T_Start = net.addTransition("T_Start");
 
     //Generating Connectors
-    net.addPrecondition(LB, R_Accepted);
+    net.addPrecondition(Controller, T_Start);
     net.addPostcondition(R_Finished, Available);
     net.addPrecondition(Unavailable, T_Finished);
-    net.addPrecondition(Busy, R_Finished);
-    net.addPostcondition(R_Accepted, Controller);
-    net.addPrecondition(Available, R_Accepted);
+    net.addPostcondition(R_Started, Busy);
     net.addPostcondition(T_Finished, Available);
     net.addPostcondition(R_Arrived, LB);
-    net.addPrecondition(Controller, R_Started);
-    net.addPostcondition(R_Started, Busy);
-    net.addPrecondition(Controller, T_Start);
+    net.addPrecondition(Available, R_Accepted);
+    net.addPostcondition(R_Accepted, Controller);
+    net.addPrecondition(Busy, R_Finished);
     net.addPostcondition(T_Start, Unavailable);
+    net.addPrecondition(Controller, R_Started);
+    net.addPrecondition(LB, R_Accepted);
 
     //Generating Properties
     marking.setTokens(Available, 1);
@@ -48,7 +49,7 @@ public class Model {
     marking.setTokens(Unavailable, 0);
     R_Accepted.addFeature(StochasticTransitionFeature.newDeterministicInstance(new BigDecimal("0"), MarkingExpr.from("1", net)));
     R_Accepted.addFeature(new Priority(0));
-    R_Arrived.addFeature(new EnablingFunction("Available>0"));
+    R_Arrived.addFeature(new EnablingFunction("A>0"));
     R_Arrived.addFeature(StochasticTransitionFeature.newExponentialInstance(new BigDecimal("1"), MarkingExpr.from("1", net)));
     R_Finished.addFeature(StochasticTransitionFeature.newExponentialInstance(new BigDecimal("1"), MarkingExpr.from("1", net)));
     R_Started.addFeature(StochasticTransitionFeature.newDeterministicInstance(new BigDecimal("0"), MarkingExpr.from("1", net)));
