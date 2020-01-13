@@ -64,6 +64,7 @@ public class ModelEvaluator {
 				this.time = new ContinuousRewardTime(new BigDecimal(step));
 				this.duration = new BigDecimal(duration);
 				this.timestamps.add(BigDecimal.ZERO);
+				this.sojournTime.add(BigDecimal.ZERO);
 				this.markings.add(s.getInitialMarking());
 				this.sequencer.addObserver(this);
 			}
@@ -100,6 +101,8 @@ public class ModelEvaluator {
 		for (int i = 0; i < tc.markings.size(); i++) {
 			Marking marking = tc.markings.get(i);
 			builder.append(tc.timestamps.get(i));
+			builder.append(" ");
+			builder.append(tc.sojournTime.get(i));
 			builder.append(" ");
 			for (String name : marking.getNonEmptyPlacesNames()) {
 				builder.append(name);
