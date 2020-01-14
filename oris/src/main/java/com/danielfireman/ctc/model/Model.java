@@ -14,11 +14,11 @@ public class Model {
   public static void build(PetriNet net, Marking marking) {
 
     //Generating Nodes
-    Place Available = net.addPlace("Available");
+    Place Avai = net.addPlace("Avai");
     Place Busy = net.addPlace("Busy");
-    Place Controller = net.addPlace("Controller");
+    Place Cont = net.addPlace("Cont");
     Place LB = net.addPlace("LB");
-    Place Unavailable = net.addPlace("Unavailable");
+    Place Unav = net.addPlace("Unav");
     Transition R_Accepted = net.addTransition("R_Accepted");
     Transition R_Arrived = net.addTransition("R_Arrived");
     Transition R_Finished = net.addTransition("R_Finished");
@@ -27,28 +27,28 @@ public class Model {
     Transition T_Start = net.addTransition("T_Start");
 
     //Generating Connectors
-    net.addPostcondition(R_Accepted, Controller);
-    net.addPrecondition(Available, R_Accepted);
-    net.addPostcondition(R_Started, Busy);
-    net.addPostcondition(T_Finished, Available);
+    net.addPostcondition(T_Finished, Avai);
+    net.addPrecondition(Cont, R_Started);
+    net.addPrecondition(Avai, R_Accepted);
     net.addPrecondition(Busy, R_Finished);
-    net.addPrecondition(Controller, T_Start);
-    net.addPrecondition(Controller, R_Started);
+    net.addPostcondition(R_Finished, Avai);
+    net.addPrecondition(Cont, T_Start);
+    net.addPostcondition(R_Started, Busy);
     net.addPrecondition(LB, R_Accepted);
-    net.addPrecondition(Unavailable, T_Finished);
-    net.addPostcondition(R_Finished, Available);
-    net.addPostcondition(T_Start, Unavailable);
+    net.addPostcondition(T_Start, Unav);
+    net.addPrecondition(Unav, T_Finished);
     net.addPostcondition(R_Arrived, LB);
+    net.addPostcondition(R_Accepted, Cont);
 
     //Generating Properties
-    marking.setTokens(Available, 1);
+    marking.setTokens(Avai, 2);
     marking.setTokens(Busy, 0);
-    marking.setTokens(Controller, 0);
+    marking.setTokens(Cont, 0);
     marking.setTokens(LB, 0);
-    marking.setTokens(Unavailable, 0);
+    marking.setTokens(Unav, 0);
     R_Accepted.addFeature(StochasticTransitionFeature.newDeterministicInstance(new BigDecimal("0"), MarkingExpr.from("1", net)));
     R_Accepted.addFeature(new Priority(0));
-    R_Arrived.addFeature(new EnablingFunction("Available>0"));
+    R_Arrived.addFeature(new EnablingFunction("Avai>0"));
     R_Arrived.addFeature(StochasticTransitionFeature.newExponentialInstance(new BigDecimal("1"), MarkingExpr.from("1", net)));
     R_Finished.addFeature(StochasticTransitionFeature.newExponentialInstance(new BigDecimal("1"), MarkingExpr.from("1", net)));
     R_Started.addFeature(StochasticTransitionFeature.newDeterministicInstance(new BigDecimal("0"), MarkingExpr.from("1", net)));

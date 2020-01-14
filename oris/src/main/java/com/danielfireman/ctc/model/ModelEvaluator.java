@@ -25,7 +25,12 @@ import org.oristool.simulator.stpn.STPNSimulatorComponentsFactory;
 import org.oristool.util.Pair;
 
 public class ModelEvaluator {
-	static final double step = 0.1;
+	private static final String BUSY_STATE = "Busy";
+	private static final String UNAVAVAILABLE_STATE = "Unav";
+	private static final String AVAILABLE_STATE = "Avai";
+	private static final String LB_STATE = "LB";
+	static final double step = 1;
+	static final double duration = 100;
 
 	public static void main(String[] args) {
 		PetriNet pn = new PetriNet();
@@ -37,11 +42,11 @@ public class ModelEvaluator {
 		/*
 		 * ######## SIMULATION #######
 		 */
-		System.out.println("Simulation");
+		System.out.println("## Simulation");
 		Sequencer s = new Sequencer(pn, m, new STPNSimulatorComponentsFactory(), new AnalysisLogger() {
 			@Override
 			public void log(String message) {
-				System.out.println(message);
+				//System.out.println(message);
 			}
 
 			@Override
@@ -50,10 +55,14 @@ public class ModelEvaluator {
 			}
 		});
 
+		class TokenCounterState {
+			Marking marking;
+			double sojourn;
+			double timestamp;
+		}
+
 		class TokenCounter implements SequencerObserver {
-			public List<Marking> markings = new LinkedList<>();
-			public List<BigDecimal> sojournTime = new LinkedList<>();
-			public List<BigDecimal> timestamps = new LinkedList<>();
+			public List<TokenCounterState> state = new LinkedList<>();
 			private Sequencer sequencer;
 			private RewardTime time;
 			private BigDecimal duration;
@@ -63,9 +72,11 @@ public class ModelEvaluator {
 				this.sequencer = s;
 				this.time = new ContinuousRewardTime(new BigDecimal(step));
 				this.duration = new BigDecimal(duration);
-				this.timestamps.add(BigDecimal.ZERO);
-				this.sojournTime.add(BigDecimal.ZERO);
-				this.markings.add(s.getInitialMarking());
+
+				TokenCounterState state = new TokenCounterState();
+				state.marking = s.getInitialMarking();
+				state.timestamp = 0;
+				this.state.add(state);
 				this.sequencer.addObserver(this);
 			}
 
@@ -76,40 +87,57 @@ public class ModelEvaluator {
 					this.sequencer.addCurrentRunObserver(this);
 					break;
 				case FIRING_EXECUTED:
-					Marking m = this.sequencer.getLastSuccession().getChild().getFeature(PetriStateFeature.class)
-							.getMarking();
-					this.markings.add(m);
+					// Stores the before the firing of the event.
+					double timeBeforeFiring = this.elapsedTime.doubleValue();
 
 					BigDecimal sojourn = this.time.getSojournTime(this.sequencer.getLastSuccession());
+
+					// Increments elapsed time.
 					this.elapsedTime = this.elapsedTime.add(sojourn);
-					this.timestamps.add(elapsedTime);
-					this.sojournTime.add(sojourn);
-					if (this.sequencer.getCurrentRunElapsedTime().compareTo(duration) >= 0) {
+
+					// Fill up last marking information.
+					TokenCounterState last = this.state.get(this.state.size() - 1);
+					last.timestamp = timeBeforeFiring;
+					last.sojourn = sojourn.doubleValue();
+
+					// Add next marking.
+					TokenCounterState next = new TokenCounterState();
+					next.marking = this.sequencer.getLastSuccession().getChild().getFeature(PetriStateFeature.class)
+							.getMarking();
+					this.state.add(next);
+
+					if (this.elapsedTime.compareTo(duration) >= 0) {
 						this.sequencer.removeCurrentRunObserver(this);
 						this.sequencer.removeObserver(this);
 					}
 					break;
-	            case RUN_END:
-	            	this.sequencer.removeCurrentRunObserver(this);
+				case RUN_END:
+					this.sequencer.removeCurrentRunObserver(this);
+					break;
 				}
 			}
 		}
 
-		TokenCounter tc = new TokenCounter(s, step, 10);
+		TokenCounter tc = new TokenCounter(s, step, duration);
 		s.simulate();
 		StringBuilder builder = new StringBuilder();
-		for (int i = 0; i < tc.markings.size(); i++) {
-			Marking marking = tc.markings.get(i);
-			builder.append(tc.timestamps.get(i));
-			builder.append(" ");
-			builder.append(tc.sojournTime.get(i));
-			builder.append(" ");
-			for (String name : marking.getNonEmptyPlacesNames()) {
-				builder.append(name);
-				builder.append(":");
-				builder.append(marking.getTokens(name));
-				builder.append(" | ");
-			}
+		builder.append("n,ts,sojourn,tk_lb,tk_available,tk_busy,tk_unavailable");
+		builder.append("\n");
+		for (int i = 0; i < tc.state.size(); i++) {
+			TokenCounterState state = tc.state.get(i);
+			builder.append(i+1);
+			builder.append(",");
+			builder.append(String.format("%.3f", state.timestamp));
+			builder.append(",");
+			builder.append(String.format("%.3f", state.sojourn));
+			builder.append(",");
+			builder.append(state.marking.getTokens(LB_STATE));
+			builder.append(",");
+			builder.append(state.marking.getTokens(AVAILABLE_STATE));
+			builder.append(",");
+			builder.append(state.marking.getTokens(BUSY_STATE));
+			builder.append(",");
+			builder.append(state.marking.getTokens(UNAVAVAILABLE_STATE));
 			builder.append("\n");
 		}
 		System.out.println(builder);
@@ -118,7 +146,7 @@ public class ModelEvaluator {
 		 * ######## TRANSIENT ANALYSIS #######
 		 * 
 		 */
-		Pair<Map<Marking, Integer>, double[][]> tr = GSPNTransient.builder().timePoints(0.0, 5.0, step).build()
+		Pair<Map<Marking, Integer>, double[][]> tr = GSPNTransient.builder().timePoints(0.0, duration, step).build()
 				.compute(pn, m);
 		double[][] trValues = tr.second();
 		Map<Marking, Integer> trMarkings = tr.first();
@@ -128,7 +156,6 @@ public class ModelEvaluator {
 		 */
 		System.out.println("\n\n## Transient Analysis ##\n\n");
 
-		System.out.println(trValues.length);
 		// Pretty-printing results.
 		Map<Integer, Marking> byID = new HashMap<>();
 		for (Entry<Marking, Integer> e : trMarkings.entrySet()) {
@@ -148,7 +175,7 @@ public class ModelEvaluator {
 		/*
 		 * ######## STEAD-STATE ANALYSIS #######
 		 */
-		System.out.println("Steady State Analysis");
+		System.out.println("\n\n## Steady State Analysis");
 		Map<Marking, Double> dist = GSPNSteadyState.builder().build().compute(pn, m);
 		System.out.println(dist.entrySet().stream().map(e -> String.format("%s -> %.6f%n", e.getKey(), e.getValue()))
 				.collect(Collectors.joining()));
