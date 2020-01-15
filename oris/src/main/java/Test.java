@@ -1,4 +1,4 @@
-package com.danielfireman.ctc.model;
+
 
 import org.oristool.models.stpn.RewardRate;
 import org.oristool.petrinet.Marking;

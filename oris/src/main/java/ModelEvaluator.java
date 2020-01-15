@@ -1,5 +1,3 @@
-package com.danielfireman.ctc.model;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -12,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.oristool.analyzer.log.AnalysisLogger;
 import org.oristool.models.gspn.GSPNSteadyState;
@@ -21,14 +18,18 @@ import org.oristool.models.pn.PetriStateFeature;
 import org.oristool.models.stpn.RewardRate;
 import org.oristool.models.stpn.TransientSolution;
 import org.oristool.petrinet.Marking;
+import org.oristool.petrinet.MarkingCondition;
 import org.oristool.petrinet.PetriNet;
+import org.oristool.petrinet.Place;
 import org.oristool.simulator.Sequencer;
 import org.oristool.simulator.Sequencer.SequencerEvent;
 import org.oristool.simulator.SequencerObserver;
 import org.oristool.simulator.TimeSeriesRewardResult;
 import org.oristool.simulator.rewards.ContinuousRewardTime;
+import org.oristool.simulator.rewards.RewardEvaluator;
 import org.oristool.simulator.rewards.RewardTime;
 import org.oristool.simulator.stpn.STPNSimulatorComponentsFactory;
+import org.oristool.simulator.stpn.TransientMarkingConditionProbability;
 import org.oristool.util.Pair;
 
 public class ModelEvaluator {
@@ -36,6 +37,7 @@ public class ModelEvaluator {
 	private static final String UNAVAVAILABLE_STATE = "Unav";
 	private static final String AVAILABLE_STATE = "Avai";
 	private static final String LB_STATE = "LB";
+	private static final String FIN_STATE = "Fin";
 
 	static class TokenCounterState {
 		Marking marking;
@@ -105,7 +107,7 @@ public class ModelEvaluator {
 			}
 		}
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		final double step = 1;
 		final double duration = 100;
@@ -114,7 +116,8 @@ public class ModelEvaluator {
 		Model.build(pn, initialMarking);
 
 		System.out.println("## Simulation -- TOKENS ##");
-		// Inspiration: https://github.com/oris-tool/sirio/wiki/Generalized-Stochastic-Petri-Nets
+		// Inspiration:
+		// https://github.com/oris-tool/sirio/wiki/Generalized-Stochastic-Petri-Nets
 		Sequencer s = new Sequencer(pn, initialMarking, new STPNSimulatorComponentsFactory(), new AnalysisLogger() {
 			@Override
 			public void log(String message) {
@@ -129,7 +132,7 @@ public class ModelEvaluator {
 		TokenCounter tc = new TokenCounter(s, step, duration);
 		s.simulate();
 		final String tokenSimResultsFileName = "./token_sim_resut_100_1.csv";
-		saveTokenCountResultsToFile(tc.state, tokenSimResultsFileName);
+		//saveTokenCountResultsToFile(tc.state, tokenSimResultsFileName);
 
 		Pair<Map<Marking, Integer>, double[][]> tr = GSPNTransient.builder().timePoints(0.0, duration, step).build()
 				.compute(pn, initialMarking);
@@ -138,12 +141,11 @@ public class ModelEvaluator {
 
 		System.out.println("\n\n## Transient Analysis - PROBS ##");
 		final String transProbFileName = "./trans_prob_resut_100_1.csv";
-		saveTransientAnalysisResultsToFile(trMarkings, trValues, transProbFileName);
+		//saveTransientAnalysisResultsToFile(trMarkings, trValues, transProbFileName);
 
-		
 		System.out.println("\n\n## Steady State Analysis -- PROBS");
-		final String steadyStateResultsFileName = "./steady_prob_resut_100_1.csv";  
-		steadyStateAnalysis(pn, initialMarking, steadyStateResultsFileName);
+		final String steadyStateResultsFileName = "./steady_prob_resut_100_1.csv";
+		//steadyStateAnalysis(pn, initialMarking, steadyStateResultsFileName);
 
 		/*
 		 * ######## REWARDS #######
@@ -152,22 +154,18 @@ public class ModelEvaluator {
 		// Follow:
 		// https://github.com/oris-tool/sirio/blob/5015a2fba7f84f959127a909a1eebad43e424a07/sirio/src/test/java/org/oristool/models/gspn/client/AbsorbingRewardTest.java#L90
 		System.out.println("\n\n## Rewards ##\n\n");
-		System.out.println("Mean Response Time: ");
 
-		TransientSolution<Marking, Marking> solution = TransientSolution.fromArray(trValues, step, trMarkings,
-				initialMarking);
-		solution.getColumnStates();
-
-		boolean cumulative = true;
-		TransientSolution<Marking, RewardRate> reward = TransientSolution.computeRewards(cumulative, solution,
-				"If(B>0,1.0,0);B;t");
-		System.out.println(reward.toString());
-
+		PetriNet finNet = new PetriNet();
+		Marking initialFinNetMarking = new Marking();
+		ModelFin.build(finNet, initialFinNetMarking);
+		TransientSolution<Marking, RewardRate> simulate = simulate(finNet, initialFinNetMarking,
+				new BigDecimal(duration), new BigDecimal(step), "If(Fin>0,1,0)", 200);
+		System.out.println(Arrays.deepToString(simulate.getSolution()));
 	}
-	
+
 	static void saveTokenCountResultsToFile(List<TokenCounterState> state, String fileName) throws IOException {
 		StringBuilder builder = new StringBuilder();
-		builder.append("n,ts,sojourn,tk_lb,tk_available,tk_busy,tk_unavailable");
+		builder.append("n,ts,sojourn,tk_lb,tk_available,tk_busy,tk_unavailable,tk_fin");
 		builder.append("\n");
 		for (int i = 0; i < state.size(); i++) {
 			TokenCounterState s = state.get(i);
@@ -188,7 +186,7 @@ public class ModelEvaluator {
 		}
 		builder.deleteCharAt(builder.length() - 1); // removing last "\n"
 		Files.writeString(Paths.get(fileName), builder.toString());
-		System.out.printf("Simulation finished. Results written to %s\n", fileName);	
+		System.out.printf("Simulation finished. Results written to %s\n", fileName);
 	}
 
 	public static void steadyStateAnalysis(PetriNet pn, Marking initialMarking, String fileName) throws IOException {
@@ -209,8 +207,9 @@ public class ModelEvaluator {
 		Files.writeString(Paths.get(fileName), builder.toString());
 		System.out.printf("Steady state probability calculation finished. Results written to %s\n", fileName);
 	}
-	
-	public static void saveTransientAnalysisResultsToFile(Map<Marking, Integer> trMarkings, double[][] trValues, String fileName) throws IOException {
+
+	public static void saveTransientAnalysisResultsToFile(Map<Marking, Integer> trMarkings, double[][] trValues,
+			String fileName) throws IOException {
 		Map<Integer, Marking> byID = new HashMap<>();
 		for (Entry<Marking, Integer> e : trMarkings.entrySet()) {
 			byID.put(e.getValue(), e.getKey());
@@ -234,6 +233,37 @@ public class ModelEvaluator {
 		builder.deleteCharAt(builder.length() - 1); // removing last "\n"
 		Files.writeString(Paths.get(fileName), builder.toString());
 		System.out.printf("Transient probability calculation finished. Results written to %s\n", fileName);
+	}
+
+	public static TransientSolution<Marking, RewardRate> simulate(PetriNet net, Marking initialMarking,
+			BigDecimal timeLimit, BigDecimal timeStep, String rewardString, int runsNumber) {
+		Sequencer s = new Sequencer(net, initialMarking, new STPNSimulatorComponentsFactory(), new AnalysisLogger() {
+			@Override
+			public void log(String message) {
+			}
+
+			@Override
+			public void debug(String string) {
+			}
+		});
+
+		// Derive the number of time points
+		int samplesNumber = (timeLimit.divide(timeStep)).intValue() + 1;
+
+		// Create a reward (which is a sequencer observer)
+		TransientMarkingConditionProbability reward = new TransientMarkingConditionProbability(s,
+				new ContinuousRewardTime(timeStep), samplesNumber, MarkingCondition.fromString(rewardString));
+
+		// Create a reward evaluator (which is a reward observer)
+		new RewardEvaluator(reward, runsNumber);
+
+		// Run simulation
+		s.simulate();
+
+		// Get simulation results
+		TimeSeriesRewardResult result = (TimeSeriesRewardResult) reward.evaluate();
+
+		return getTransientSolutionFromSimulatorResult(result, rewardString, initialMarking, timeLimit, timeStep);
 	}
 
 	public static TransientSolution<Marking, RewardRate> getTransientSolutionFromSimulatorResult(
