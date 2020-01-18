@@ -30,6 +30,7 @@ import org.oristool.simulator.rewards.RewardEvaluator;
 import org.oristool.simulator.rewards.RewardTime;
 import org.oristool.simulator.stpn.STPNSimulatorComponentsFactory;
 import org.oristool.simulator.stpn.TransientMarkingConditionProbability;
+import org.oristool.simulator.stpn.TransientMarkingProbability;
 import org.oristool.util.Pair;
 
 public class ModelEvaluator {
@@ -37,7 +38,7 @@ public class ModelEvaluator {
 	private static final String UNAVAVAILABLE_STATE = "Unav";
 	private static final String AVAILABLE_STATE = "Avai";
 	private static final String LB_STATE = "LB";
-	private static final String FIN_STATE = "Fin";
+
 
 	static class TokenCounterState {
 		Marking marking;
@@ -297,5 +298,6 @@ public class ModelEvaluator {
 
 		return solution;
 	}
+	
 
 }
