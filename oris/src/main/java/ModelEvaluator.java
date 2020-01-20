@@ -9,8 +9,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 
+import org.oristool.analyzer.Succession;
 import org.oristool.analyzer.log.AnalysisLogger;
 import org.oristool.models.gspn.GSPNSteadyState;
 import org.oristool.models.gspn.GSPNTransient;
@@ -20,30 +22,32 @@ import org.oristool.models.stpn.TransientSolution;
 import org.oristool.petrinet.Marking;
 import org.oristool.petrinet.MarkingCondition;
 import org.oristool.petrinet.PetriNet;
-import org.oristool.petrinet.Place;
 import org.oristool.simulator.Sequencer;
 import org.oristool.simulator.Sequencer.SequencerEvent;
 import org.oristool.simulator.SequencerObserver;
 import org.oristool.simulator.TimeSeriesRewardResult;
 import org.oristool.simulator.rewards.ContinuousRewardTime;
+import org.oristool.simulator.rewards.Reward;
 import org.oristool.simulator.rewards.RewardEvaluator;
 import org.oristool.simulator.rewards.RewardTime;
 import org.oristool.simulator.stpn.STPNSimulatorComponentsFactory;
 import org.oristool.simulator.stpn.TransientMarkingConditionProbability;
-import org.oristool.simulator.stpn.TransientMarkingProbability;
 import org.oristool.util.Pair;
 
 public class ModelEvaluator {
-	private static final String BUSY_STATE = "Busy";
-	private static final String UNAVAVAILABLE_STATE = "Unav";
-	private static final String AVAILABLE_STATE = "Avai";
-	private static final String LB_STATE = "LB";
-
+	private static final String R1_SERV = "R1_serv";
+	private static final String R2_SERV = "R2_serv";
+	private static final String LB_STATE = "lb";
 
 	static class TokenCounterState {
 		Marking marking;
 		double sojourn;
 		double timestamp;
+	}
+
+	static class ExecutedRequests {
+		double timestamp;
+		double responseTime;
 	}
 
 	static class TokenCounter implements SequencerObserver {
@@ -57,11 +61,6 @@ public class ModelEvaluator {
 			this.sequencer = s;
 			this.time = new ContinuousRewardTime(new BigDecimal(step));
 			this.duration = new BigDecimal(duration);
-
-			TokenCounterState state = new TokenCounterState();
-			state.marking = s.getInitialMarking();
-			state.timestamp = 0;
-			this.state.add(state);
 			this.sequencer.addObserver(this);
 		}
 
@@ -73,24 +72,20 @@ public class ModelEvaluator {
 				break;
 			case FIRING_EXECUTED:
 				// Stores the before the firing of the event.
-				double timeBeforeFiring = this.elapsedTime.doubleValue();
+				Succession succ = this.sequencer.getLastSuccession();
+				PetriStateFeature childFeature = succ.getChild().getFeature(PetriStateFeature.class);
+				BigDecimal sojourn = this.time.getSojournTime(succ);
 
-				BigDecimal sojourn = this.time.getSojournTime(this.sequencer.getLastSuccession());
-
-				// Increments elapsed time.
-				this.elapsedTime = this.elapsedTime.add(sojourn);
-
-				// Fill up last marking information.
-				TokenCounterState last = this.state.get(this.state.size() - 1);
-				last.timestamp = timeBeforeFiring;
-				last.sojourn = sojourn.doubleValue();
-
-				// Add next marking.
+				// Fill up marking information.
 				TokenCounterState next = new TokenCounterState();
-				next.marking = this.sequencer.getLastSuccession().getChild().getFeature(PetriStateFeature.class)
-						.getMarking();
+				next.marking = childFeature.getMarking();
+				next.timestamp = this.elapsedTime.doubleValue();
+				next.sojourn = sojourn.doubleValue();
 				this.state.add(next);
-
+				
+				// Move elapsed time forward.
+				this.elapsedTime = this.elapsedTime.add(sojourn);
+				
 				if (this.elapsedTime.compareTo(duration) >= 0) {
 					this.sequencer.removeCurrentRunObserver(this);
 					this.sequencer.removeObserver(this);
@@ -111,7 +106,7 @@ public class ModelEvaluator {
 
 	public static void main(String[] args) throws IOException {
 		final double step = 1;
-		final double duration = 100;
+		final double duration = 50;
 		PetriNet pn = new PetriNet();
 		Marking initialMarking = new Marking();
 		Model.build(pn, initialMarking);
@@ -133,16 +128,46 @@ public class ModelEvaluator {
 		TokenCounter tc = new TokenCounter(s, step, duration);
 		s.simulate();
 		final String tokenSimResultsFileName = "./token_sim_resut_100_1.csv";
-		//saveTokenCountResultsToFile(tc.state, tokenSimResultsFileName);
+		saveTokenCountResultsToFile(tc.state, tokenSimResultsFileName);
+
+		Queue<Double> r1Start = new LinkedList<>();
+		Queue<Double> r2Start = new LinkedList<>();
+		int r1LastTokens = 0;
+		int r2LastTokens = 0;
+		List<Double> responseTimes = new LinkedList<>();
+		// Assumes that each transition can only move one token at a time.
+		for (TokenCounterState c : tc.state) {
+			int r1Tokens = c.marking.getTokens(R1_SERV);
+			if (r1Tokens < r1LastTokens) { // Request finished.
+				responseTimes.add(c.timestamp + c.sojourn - r1Start.remove());
+				r1LastTokens = r1Tokens;
+			} else if (r1Tokens > r1LastTokens) { // Request started.
+				r1Start.add(c.timestamp);
+				r1LastTokens = r1Tokens;
+			}
+			int r2Tokens = c.marking.getTokens(R2_SERV);
+			if (r2Tokens < r2LastTokens) { // Request finished.
+				responseTimes.add(c.timestamp + c.sojourn - r2Start.remove());
+				r2LastTokens = r2Tokens;
+			} else if (r2Tokens > r2LastTokens) { // Request started.
+				r2Start.add(c.timestamp);
+				r2LastTokens = r2Tokens;
+			}
+		}
+		StringBuilder builder = new StringBuilder();
+		builder.append("response_time\n");
+		responseTimes.stream().forEach(rt -> {builder.append(rt); builder.append(",\n");});
+		builder.delete(builder.length()-2, builder.length());
+		Files.writeString(Paths.get("response_times.csv"), builder.toString());
 
 		Pair<Map<Marking, Integer>, double[][]> tr = GSPNTransient.builder().timePoints(0.0, duration, step).build()
 				.compute(pn, initialMarking);
 		double[][] trValues = tr.second();
 		Map<Marking, Integer> trMarkings = tr.first();
 
-		System.out.println("\n\n## Transient Analysis - PROBS ##");
+		//System.out.println("\n\n## Transient Analysis - PROBS ##");
 		final String transProbFileName = "./trans_prob_resut_100_1.csv";
-		//saveTransientAnalysisResultsToFile(trMarkings, trValues, transProbFileName);
+		// saveTransientAnalysisResultsToFile(trMarkings, trValues, transProbFileName);
 
 		System.out.println("\n\n## Steady State Analysis -- PROBS");
 		final String steadyStateResultsFileName = "./steady_prob_resut_100_1.csv";
@@ -154,19 +179,20 @@ public class ModelEvaluator {
 
 		// Follow:
 		// https://github.com/oris-tool/sirio/blob/5015a2fba7f84f959127a909a1eebad43e424a07/sirio/src/test/java/org/oristool/models/gspn/client/AbsorbingRewardTest.java#L90
-		System.out.println("\n\n## Rewards ##\n\n");
+		// System.out.println("\n\n## Rewards ##\n\n");
 
-		PetriNet finNet = new PetriNet();
-		Marking initialFinNetMarking = new Marking();
-		ModelFin.build(finNet, initialFinNetMarking);
-		TransientSolution<Marking, RewardRate> simulate = simulate(finNet, initialFinNetMarking,
-				new BigDecimal(duration), new BigDecimal(step), "If(Fin>0,1,0)", 200);
-		System.out.println(Arrays.deepToString(simulate.getSolution()));
+		// PetriNet finNet = new PetriNet();
+		// Marking initialFinNetMarking = new Marking();
+		// ModelFin.build(finNet, initialFinNetMarking);
+		// TransientSolution<Marking, RewardRate> simulate = simulate(finNet,
+		// initialFinNetMarking,
+		// new BigDecimal(duration), new BigDecimal(step), "If(Fin>0,1,0)", 200);
+		// System.out.println(Arrays.deepToString(simulate.getSolution()));
 	}
 
 	static void saveTokenCountResultsToFile(List<TokenCounterState> state, String fileName) throws IOException {
 		StringBuilder builder = new StringBuilder();
-		builder.append("n,ts,sojourn,tk_lb,tk_available,tk_busy,tk_unavailable,tk_fin");
+		builder.append("n,ts,sojourn,tk_lb,tk_r1,tk_r2");
 		builder.append("\n");
 		for (int i = 0; i < state.size(); i++) {
 			TokenCounterState s = state.get(i);
@@ -178,11 +204,9 @@ public class ModelEvaluator {
 			builder.append(",");
 			builder.append(s.marking.getTokens(LB_STATE));
 			builder.append(",");
-			builder.append(s.marking.getTokens(AVAILABLE_STATE));
+			builder.append(s.marking.getTokens(R1_SERV));
 			builder.append(",");
-			builder.append(s.marking.getTokens(BUSY_STATE));
-			builder.append(",");
-			builder.append(s.marking.getTokens(UNAVAVAILABLE_STATE));
+			builder.append(s.marking.getTokens(R2_SERV));
 			builder.append("\n");
 		}
 		builder.deleteCharAt(builder.length() - 1); // removing last "\n"
@@ -191,7 +215,7 @@ public class ModelEvaluator {
 	}
 
 	public static void steadyStateAnalysis(PetriNet pn, Marking initialMarking, String fileName) throws IOException {
-		Map<Marking, Double> steadyResults = GSPNSteadyState.builder().build().compute(pn, initialMarking);
+		Map<Marking, Double> steadyResults = GSPNSteadyState.builder().build().compute(pn, initialMarking);		
 		StringBuilder builder = new StringBuilder();
 		Set<Marking> markingSet = steadyResults.keySet();
 		for (Marking m : markingSet) {
@@ -298,6 +322,5 @@ public class ModelEvaluator {
 
 		return solution;
 	}
-	
 
 }
