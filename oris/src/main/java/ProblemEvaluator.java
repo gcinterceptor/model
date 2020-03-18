@@ -39,7 +39,7 @@ public class ProblemEvaluator {
 
 	private static TransientSolution<Marking, RewardRate> calculateRewards(PetriNet pn, Marking im) {
 		final long step = 1;
-		final long endTime = 30000;
+		final long endTime = 20000;
 		Pair<Map<Marking, Integer>, double[][]> result = GSPNTransient.builder()
 				.error(1e-6)
 				.timePoints(0, endTime, step)

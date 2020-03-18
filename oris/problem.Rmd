@@ -3,23 +3,53 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-
-```{r}
+```{r setup}
 require(ggplot2)
 require(ggpubr)
 require(dplyr)
+require(reshape2)
+
+colors <- c("yellowgreen", "violetred4")
+cOn <- colors[1]
+cOff <- colors[2]
 
 prob_cmp <- read.csv("problem_cmp.csv")
-
-colnames(prob_cmp) <- c("ts", "gc", "nogc")
-ggplot(prob_cmp) +
-  geom_line(aes(x=ts, y=gc), color="blue") + 
-  geom_line(aes(x=ts, y=nogc), color="red") +
-  coord_cartesian(ylim = c(0.99, 1)) +
-  labs(x="Tempo de Resposta (us)", y="Função de Distribuição Cumulativa")+ 
-  theme_pubclean()
+colnames(prob_cmp) <- c("tr", "sim", "não")
+prob_cmp$tr <- prob_cmp$tr/1000 # conv. to ms.
+prob_cmp <- melt(prob_cmp, id.vars="tr", measure.vars=c("sim", "não"))
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+med_sim <- prob_cmp %>% filter(variable=="sim" & value>0.5) %>% head(n=1)
+med_nao <- prob_cmp %>% filter(variable=="não" & value>0.5) %>% head(n=1)
+perc_sim <- prob_cmp %>% filter(value>=0.9990 & variable=="sim") %>% head(n=1)
+perc_nao <- prob_cmp %>% filter(value>=0.9990 & variable=="não") %>% head(n=1)
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+(perc_sim$tr/med_sim$tr)/(perc_nao$tr/med_nao$tr)
+
+(perc_sim$tr-med_sim$tr)/(perc_nao$tr-med_nao$tr)
+
+ggplot(prob_cmp, aes(x=tr, y=value, group=variable)) +
+  geom_line(aes(color=variable, linetype=variable), size=1.2) +
+  geom_vline(xintercept=perc_sim$tr, linetype=1, size=0.9, color=cOn, alpha=0.4) +
+  geom_vline(xintercept=perc_nao$tr, linetype=2, size=0.9, color=cOff, alpha=0.4) +
+  geom_vline(xintercept=med_sim$tr, linetype=1, size=0.9, color=cOn, alpha=0.4) +
+  geom_vline(xintercept=med_nao$tr, linetype=2, size=0.9, color=cOff, alpha=0.4) +
+  annotate(geom="text", x=med_sim$tr-0.4, y=0.9945, label="Medianas", angle = 90, size=4, alpha=0.7, color="darkgray", fontface="bold") +
+  annotate(geom="text", x=perc_nao$tr+((perc_sim$tr-perc_nao$tr)/2), y=0.9905, label="Distância entre os 99.9 percentis", size=4, alpha=0.7, color="darkgray", fontface="bold") +
+  geom_segment(aes(x=perc_nao$tr, y=0.991, xend=perc_sim$tr, yend=0.991), arrow = arrow(length = unit(0.3, "cm"),  ends = "both", type = "closed"), size=0.1, colour="darkgray", show.legend = FALSE) +
+  coord_cartesian(ylim = c(0.99, 1)) +
+  scale_x_continuous(breaks=seq(0,20, by=2)) +
+  scale_color_manual(values=colors) +
+  guides(linetype=FALSE) +
+  labs(
+    x="Tempo de Resposta (ms)",
+    y="Função de Distribuição Cumulativa",
+    color="Impacto da Tarefa Concorrente")+ 
+  theme_pubr() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.x = element_line(colour = "darkgray", linetype = 3))
+
+ggsave("prob_model_99perc.png")
+```

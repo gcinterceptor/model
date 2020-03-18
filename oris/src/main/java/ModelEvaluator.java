@@ -106,7 +106,7 @@ public class ModelEvaluator {
 
 	public static void main(String[] args) throws IOException {
 		final double step = 1;
-		final double duration = 50;
+		final double duration = 50000;
 		PetriNet pn = new PetriNet();
 		Marking initialMarking = new Marking();
 		Model.build(pn, initialMarking);
@@ -156,8 +156,7 @@ public class ModelEvaluator {
 		}
 		StringBuilder builder = new StringBuilder();
 		builder.append("response_time\n");
-		responseTimes.stream().forEach(rt -> {builder.append(rt); builder.append(",\n");});
-		builder.delete(builder.length()-2, builder.length());
+		responseTimes.stream().forEach(rt -> {builder.append(rt); builder.append("\n");});
 		Files.writeString(Paths.get("response_times.csv"), builder.toString());
 
 		Pair<Map<Marking, Integer>, double[][]> tr = GSPNTransient.builder().timePoints(0.0, duration, step).build()

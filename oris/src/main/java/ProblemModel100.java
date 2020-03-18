@@ -35,7 +35,7 @@ public class ProblemModel100 {
     marking.setTokens(S_is_task_executing, 0);
     marking.setTokens(S_req_arrived, 1);
     marking.setTokens(S_task_exec, 0);
-    T_impact.addFeature(StochasticTransitionFeature.newExponentialInstance("0.00003"));
+    T_impact.addFeature(StochasticTransitionFeature.newExponentialInstance("0.0001"));
     T_no.addFeature(StochasticTransitionFeature.newDeterministicInstance(new BigDecimal("0"), MarkingExpr.from("0.997", net)));
     T_no.addFeature(new Priority(0));
     T_service.addFeature(StochasticTransitionFeature.newExponentialInstance("0.0036"));
