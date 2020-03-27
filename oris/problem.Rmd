@@ -13,6 +13,9 @@ colors <- c("yellowgreen", "violetred4")
 cOn <- colors[1]
 cOff <- colors[2]
 
+model_entropy_replicas <- read.csv("model_entropy_simple.csv")
+#model_entropy_replicas <- melt(model_entropy_replicas, id.vars="n", measure.vars=c("pvn", "un"))
+
 prob_cmp <- read.csv("problem_cmp.csv")
 colnames(prob_cmp) <- c("tr", "sim", "não")
 prob_cmp$tr <- prob_cmp$tr/1000 # conv. to ms.
@@ -52,4 +55,38 @@ ggplot(prob_cmp, aes(x=tr, y=value, group=variable)) +
     panel.grid.major.x = element_line(colour = "darkgray", linetype = 3))
 
 ggsave("prob_model_99perc.png")
+```
+
+```{r res_model_replicas_pvn}
+ggplot(model_entropy_replicas, aes(x=n, y=pvn)) +
+  geom_line(size=0.8, color=cOn) +
+  #geom_point(size=2, color=cOn) +
+  #geom_bar(stat="identity", fill=cOn) +
+  scale_x_discrete(limits=1:10) +
+  scale_y_continuous(limits=0:1, labels = function(x) paste0(x*100, "%")) +
+  scale_color_manual(values=colors) +
+  labs(x="Número de Réplicas", y="Perda de Vazão Normalizada") +
+  theme_pubr() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.x = element_line(colour = "darkgray", linetype = 3),
+    panel.grid.major.y = element_line(colour = "darkgray", linetype = 3))
+ggsave("res_model_replicas_pvn.png")
+```
+
+```{r res_model_replicas_iu}
+ggplot(model_entropy_replicas, aes(x=n, y=un)) +
+  geom_line(size=0.8, color=cOn) +
+  #geom_point(size=2, color=cOn) +
+  #geom_bar(stat="identity", fill=cOn) +
+  scale_x_discrete(limits=1:10) +
+  scale_y_continuous(limits=0:1, labels = function(x) paste0(x*100, "%")) +
+  scale_color_manual(values=colors) +
+  labs(x="Número de Réplicas", y="Impacto na Utilização") +
+  theme_pubr() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.x = element_line(colour = "darkgray", linetype = 3),
+    panel.grid.major.y = element_line(colour = "darkgray", linetype = 3))
+ggsave("res_model_replicas_iu.png")
 ```
