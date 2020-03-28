@@ -4,17 +4,13 @@ import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.oristool.models.gspn.GSPNSteadyState;
-import org.oristool.models.gspn.GSPNTransient;
 import org.oristool.models.stpn.RewardRate;
 import org.oristool.models.stpn.SteadyStateSolution;
-import org.oristool.models.stpn.TransientSolution;
 import org.oristool.petrinet.Marking;
 import org.oristool.petrinet.PetriNet;
-import org.oristool.util.Pair;
 
 public class ModelEntropySimpleEvaluator {
 	public static int N_REPLICAS = 2;
@@ -40,43 +36,28 @@ public class ModelEntropySimpleEvaluator {
 //		}
 //		Files.writeString(Paths.get("model_entropy_simple.csv"), b.toString());
 		StringBuilder b = new StringBuilder();
-		b.append("n,pvn,un\n");
-		for (int replicas = 1; replicas <= 5; replicas++) {
+		b.append("n,pvn,pcp\n");
+		for (int replicas = 1; replicas <= 10; replicas++) {
 			// Setup.
 			PetriNet pn = new PetriNet();
 			Marking im = new Marking();
 			ModelEntropySimple.r = replicas;
-			ModelEntropySimple.k = 10;
 			ModelEntropySimple.omega = 0.0001;
 			ModelEntropySimple.mu = 0.0036;
 			ModelEntropySimple.pImpact = 0.003;
 			ModelEntropySimple.lambda = 1;
 			ModelEntropySimple.build(pn, im);
-			String[] rewardsStrings = { String.format("If(S_lb>0 && S_exec_tasks==%d,1,0)", replicas),
-					String.format("If(S_exec_tasks>0,1,0)", replicas),
-					"S_exec_tasks==1",
-					"S_exec_tasks==2",
-					"S_exec_tasks==3",
-					"S_exec_tasks==4",
-					"S_exec_tasks==5"};
+			String[] rewardsStrings = {
+					String.format("If(S_exec_tasks==%d,1,0)", replicas),
+					String.format("If(S_exec_tasks>0,1,0)", replicas)};
 
 			// Execution.
 			// Doing this because RewardRate does not override equals.
 			Map<String, BigDecimal> rewards = steadyState(pn, im, String.join(";", rewardsStrings)).entrySet().stream()
 					.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
 			double pvn =rewards.get(rewardsStrings[0]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue();
-			double un = rewards.get(rewardsStrings[1]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(); 
-			b.append(String.format("%d,%f,%f,%f,%f,%f,%f,%f,%f\n", replicas, pvn, un,
-					rewards.get(rewardsStrings[2]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(),
-					rewards.get(rewardsStrings[3]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(),
-					rewards.get(rewardsStrings[4]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(),
-					rewards.get(rewardsStrings[5]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(),
-					rewards.get(rewardsStrings[6]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(),
-					rewards.get(rewardsStrings[2]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue()+
-					rewards.get(rewardsStrings[3]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue()+
-					rewards.get(rewardsStrings[4]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue()+
-					rewards.get(rewardsStrings[5]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue()+
-					rewards.get(rewardsStrings[6]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue()));
+			double pcp = rewards.get(rewardsStrings[1]).setScale(DECIMAL_PLACES, RoundingMode.HALF_EVEN).doubleValue(); 
+			b.append(String.format("%d,%f,%f\n", replicas, pvn, pcp));
 		}
 		System.out.println(b.toString());
 		Files.writeString(Paths.get("model_entropy_simple.csv"), b.toString());
