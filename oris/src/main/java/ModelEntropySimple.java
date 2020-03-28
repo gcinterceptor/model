@@ -3,6 +3,7 @@ import java.math.BigDecimal;
 import org.oristool.models.pn.Priority;
 import org.oristool.models.stpn.MarkingExpr;
 import org.oristool.models.stpn.trees.StochasticTransitionFeature;
+import org.oristool.petrinet.EnablingFunction;
 import org.oristool.petrinet.Marking;
 import org.oristool.petrinet.PetriNet;
 import org.oristool.petrinet.Place;
@@ -45,6 +46,7 @@ public class ModelEntropySimple {
 		marking.setTokens(S_exec_tasks, 0);
 		marking.setTokens(S_fin, r);
 		marking.setTokens(S_serv, 0);
+		T_arrival.addFeature(new EnablingFunction(String.format("(S_serv+S_exec_tasks)<%d", r)));
 		T_arrival.addFeature(
 				StochasticTransitionFeature.newExponentialInstance(Double.toString(lambda)));
 		T_impact.addFeature(StochasticTransitionFeature.newExponentialInstance(Double.toString(omega)));

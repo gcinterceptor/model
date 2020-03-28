@@ -19,7 +19,7 @@
       <features/>
       <properties>
         <property id="0.default.name" name="S_fin" satellite-x="485" satellite-y="15"/>
-        <property id="default.marking" marking="2"/>
+        <property id="default.marking" marking="1"/>
       </properties>
     </place>
     <place uuid="bf4210b9-6c45-46aa-b341-fbac17af3534" x="559" y="284">
@@ -47,7 +47,7 @@
       </features>
       <properties>
         <property id="0.default.name" name="T_arrival" satellite-x="476" satellite-y="312"/>
-        <property enabling-function="" id="10.default.enablingFunction"/>
+        <property enabling-function="(S_serv+S_exec_tasks)&lt;2" id="10.default.enablingFunction"/>
         <property id="11.default.markingUpdate" marking-update=""/>
         <property id="12.default.resetTransitions" reset-transitions=""/>
         <property id="transition.stochastic" lambda="1" property-data-type="3.type.exponential" satellite-x="478" satellite-y="352"/>
@@ -89,43 +89,43 @@
         <property id="transition.stochastic" priority="0" property-data-type="0.type.immediate" satellite-x="589" satellite-y="196" weight="0.997"/>
       </properties>
     </transition>
-    <arc from="6b389357-698e-43d6-948c-c43a6bf5b78e" to="ccd946fe-b74c-4f55-91bf-dfd701499241" uuid="03b76610-be89-4e2d-94bd-300c28cb1f6f">
+    <arc from="bf4210b9-6c45-46aa-b341-fbac17af3534" to="2047db64-b100-4589-b5f2-047cb249c9a0" uuid="2552e0d0-b789-4aeb-88a7-532fc0173f1e">
       <features/>
       <properties/>
     </arc>
-    <arc from="6b389357-698e-43d6-948c-c43a6bf5b78e" to="8ff1beab-5e6d-4964-815d-e451863f2b76" uuid="239b95d2-f2c9-445d-8540-54316a2b310e">
+    <arc from="c6ebd5f1-4f28-443f-9071-b8e326d2bb35" to="a5099953-da1d-4cbd-beb8-9ba1c06f5b5d" uuid="26876540-f779-4656-a7d3-2f9e3afeecc4">
       <features/>
       <properties/>
     </arc>
-    <arc from="3a53c99e-edcd-41e4-8975-502fe25fab53" to="c6ebd5f1-4f28-443f-9071-b8e326d2bb35" uuid="320d2ad1-9e42-4d68-b95e-885a1ca40519">
+    <arc from="a5099953-da1d-4cbd-beb8-9ba1c06f5b5d" to="6a325b64-c9cd-44df-8921-b1107eac9168" uuid="3ec48692-5cfd-4e26-a61f-aedf395d0b4a">
       <features/>
       <properties/>
     </arc>
-    <arc from="6a325b64-c9cd-44df-8921-b1107eac9168" to="bf4210b9-6c45-46aa-b341-fbac17af3534" uuid="962d9f94-d1ed-40bc-8d9f-5de2d2164e0c">
+    <arc from="6b389357-698e-43d6-948c-c43a6bf5b78e" to="8ff1beab-5e6d-4964-815d-e451863f2b76" uuid="4ec76424-f007-4ec8-831a-ef3a86764989">
       <features/>
       <properties/>
     </arc>
-    <arc from="8ff1beab-5e6d-4964-815d-e451863f2b76" to="3a53c99e-edcd-41e4-8975-502fe25fab53" uuid="9b4706f4-8bbe-41d1-a171-b01ed7eaf57c">
+    <arc from="ccd946fe-b74c-4f55-91bf-dfd701499241" to="a5099953-da1d-4cbd-beb8-9ba1c06f5b5d" uuid="85b134b8-c909-4725-81be-efc6285d36b8">
       <features/>
       <properties/>
     </arc>
-    <arc from="2047db64-b100-4589-b5f2-047cb249c9a0" to="6b389357-698e-43d6-948c-c43a6bf5b78e" uuid="cb7cb84f-3ed1-43f0-816d-85becab1d6a6">
+    <arc from="8ff1beab-5e6d-4964-815d-e451863f2b76" to="3a53c99e-edcd-41e4-8975-502fe25fab53" uuid="adc08a28-e874-4067-897f-29d1729fcab1">
       <features/>
       <properties/>
     </arc>
-    <arc from="c6ebd5f1-4f28-443f-9071-b8e326d2bb35" to="a5099953-da1d-4cbd-beb8-9ba1c06f5b5d" uuid="cf96303e-e7d2-44da-a6e8-3cbc5264fb99">
+    <arc from="6b389357-698e-43d6-948c-c43a6bf5b78e" to="ccd946fe-b74c-4f55-91bf-dfd701499241" uuid="b973f982-c469-4776-91a7-67b4c468c23f">
       <features/>
       <properties/>
     </arc>
-    <arc from="a5099953-da1d-4cbd-beb8-9ba1c06f5b5d" to="6a325b64-c9cd-44df-8921-b1107eac9168" uuid="e0f31ce0-59a9-4aad-aeab-194faebae255">
+    <arc from="3a53c99e-edcd-41e4-8975-502fe25fab53" to="c6ebd5f1-4f28-443f-9071-b8e326d2bb35" uuid="b9ed7228-7602-4fb1-9c86-aca1468baad4">
       <features/>
       <properties/>
     </arc>
-    <arc from="ccd946fe-b74c-4f55-91bf-dfd701499241" to="a5099953-da1d-4cbd-beb8-9ba1c06f5b5d" uuid="f42d3b24-d840-4e57-bce0-dce4c3f42735">
+    <arc from="2047db64-b100-4589-b5f2-047cb249c9a0" to="6b389357-698e-43d6-948c-c43a6bf5b78e" uuid="c3b151fb-e652-484e-a034-f7f193247fef">
       <features/>
       <properties/>
     </arc>
-    <arc from="bf4210b9-6c45-46aa-b341-fbac17af3534" to="2047db64-b100-4589-b5f2-047cb249c9a0" uuid="fcde0c87-bb89-4e29-a16b-b87c7ee3f84d">
+    <arc from="6a325b64-c9cd-44df-8921-b1107eac9168" to="bf4210b9-6c45-46aa-b341-fbac17af3534" uuid="fd106639-7d96-48bf-bdc1-8b1502fb0a9b">
       <features/>
       <properties/>
     </arc>
