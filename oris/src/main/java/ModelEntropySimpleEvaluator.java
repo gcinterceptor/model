@@ -37,8 +37,8 @@ public class ModelEntropySimpleEvaluator {
 //		}
 //		Files.writeString(Paths.get("model_entropy_simple.csv"), b.toString());
 		StringBuilder b = new StringBuilder();
-		b.append("nReplicas,nClasses,nMarkings,pvn,pcp\n");
-		for (int replicas = 1; replicas <= 10; replicas++) {
+		b.append("nReplicas,nMarkings,nClasses,pvn,pcp\n");
+		for (int replicas = 1; replicas <= 5; replicas++) {
 			// Setup.
 			PetriNet pn = new PetriNet();
 			Marking im = new Marking();

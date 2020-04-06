@@ -13,11 +13,11 @@ colors <- c("yellowgreen", "violetred4")
 cOn <- colors[1]
 cOff <- colors[2]
 
-model_entropy_replicas <- read.csv("model_entropy_simple.csv")
+#model_entropy_replicas <- read.csv("model_entropy_simple.csv")
 #model_entropy_replicas <- melt(model_entropy_replicas, id.vars="n", measure.vars=c("pvn", "un"))
 
 prob_cmp <- read.csv("problem_cmp.csv")
-colnames(prob_cmp) <- c("tr", "sim", "não")
+colnames(prob_cmp) <- c("tr", "não", "sim")
 prob_cmp$tr <- prob_cmp$tr/1000 # conv. to ms.
 prob_cmp <- melt(prob_cmp, id.vars="tr", measure.vars=c("sim", "não"))
 ```
@@ -48,22 +48,22 @@ ggplot(prob_cmp, aes(x=tr, y=value, group=variable)) +
   labs(
     x="Tempo de Resposta (ms)",
     y="Função de Distribuição Cumulativa",
-    color="Impacto da Tarefa Concorrente")+ 
+    color="Utilização do CTC")+ 
   theme_pubr() +
   theme(
     legend.position="bottom",
     panel.grid.major.x = element_line(colour = "darkgray", linetype = 3))
 
-ggsave("prob_model_99perc.png")
+ggsave("res_model_replicas_tr.png")
 ```
 
 ```{r res_model_replicas_pvn}
-ggplot(model_entropy_replicas, aes(x=n, y=pvn)) +
-  geom_line(size=0.8, color=cOn) +
+ggplot(read.csv("model_entropy_simple_5_replicas.csv"), aes(x=nReplicas, y=pvn)) +
+  #geom_line(size=0.8, color=cOn) +
   #geom_point(size=2, color=cOn) +
-  #geom_bar(stat="identity", fill=cOn) +
+  geom_bar(stat="identity", fill=cOn) +
   scale_x_discrete(limits=1:10) +
-  scale_y_continuous(limits=0:1, labels = function(x) paste0(x*100, "%")) +
+  scale_y_continuous(limit=0:1,breaks = seq(0,1,0.1), labels = function(x) paste0(x*100, "%")) +
   scale_color_manual(values=colors) +
   labs(x="Número de Réplicas", y="Perda de Vazão Normalizada") +
   theme_pubr() +
@@ -74,19 +74,33 @@ ggplot(model_entropy_replicas, aes(x=n, y=pvn)) +
 ggsave("res_model_replicas_pvn.png")
 ```
 
-```{r res_model_replicas_iu}
-ggplot(model_entropy_replicas, aes(x=n, y=un)) +
-  geom_line(size=0.8, color=cOn) +
+```{r res_model_replicas_pcp}
+ggplot(read.csv("model_entropy_simple_5_replicas.csv"), aes(x=nReplicas, y=pcp)) +
+  #geom_line(size=0.8, color=cOn) +
   #geom_point(size=2, color=cOn) +
-  #geom_bar(stat="identity", fill=cOn) +
+  geom_bar(stat="identity", fill=cOn) +
   scale_x_discrete(limits=1:10) +
-  scale_y_continuous(limits=0:1, labels = function(x) paste0(x*100, "%")) +
+  scale_y_continuous(limit=0:1,breaks = seq(0,1,0.1), labels = function(x) paste0(x*100, "%")) +
   scale_color_manual(values=colors) +
-  labs(x="Número de Réplicas", y="Impacto na Utilização") +
+  labs(x="Número de Réplicas", y="Perda de Capacidade de Processamento") +
   theme_pubr() +
   theme(
     legend.position="bottom",
     panel.grid.major.x = element_line(colour = "darkgray", linetype = 3),
     panel.grid.major.y = element_line(colour = "darkgray", linetype = 3))
-ggsave("res_model_replicas_iu.png")
+ggsave("res_model_replicas_pcp.png")
+```
+
+```{r res_model_replicas_markov}
+ggplot(read.csv("model_entropy_simple_5_replicas.csv"), aes(x=nReplicas, y=nMarkings)) +
+  geom_bar(stat="identity", fill=cOn) +
+  scale_x_discrete(limits=1:5) +
+  scale_color_manual(values=colors) +
+  labs(x="Número de Réplicas", y="Número de Marcações") +
+  theme_pubr() +
+  theme(
+    legend.position="bottom",
+    panel.grid.major.x = element_line(colour = "darkgray", linetype = 3),
+    panel.grid.major.y = element_line(colour = "darkgray", linetype = 3))
+ggsave("res_model_replicas_markings.png")
 ```
