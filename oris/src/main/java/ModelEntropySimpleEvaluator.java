@@ -38,7 +38,7 @@ public class ModelEntropySimpleEvaluator {
 //		Files.writeString(Paths.get("model_entropy_simple.csv"), b.toString());
 		StringBuilder b = new StringBuilder();
 		b.append("nReplicas,nMarkings,nClasses,pvn,pcp\n");
-		for (int replicas = 1; replicas <= 5; replicas++) {
+		for (int replicas : new int[]{1,2,4,8,16,32,64}) {
 			// Setup.
 			PetriNet pn = new PetriNet();
 			Marking im = new Marking();
@@ -47,6 +47,10 @@ public class ModelEntropySimpleEvaluator {
 			ModelEntropySimple.mu = 0.0036;
 			ModelEntropySimple.pImpact = 0.003;
 			ModelEntropySimple.lambda = 1;
+			//ModelEntropySimple.omega = 1;
+			//ModelEntropySimple.mu = 10;
+			//ModelEntropySimple.pImpact = 0.003;
+			//ModelEntropySimple.lambda = 1;
 			ModelEntropySimple.build(pn, im);
 			String[] rewardsStrings = {
 					String.format("If(S_exec_tasks==%d,1,0)", replicas),

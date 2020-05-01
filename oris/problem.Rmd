@@ -58,11 +58,18 @@ ggsave("res_model_replicas_tr.png")
 ```
 
 ```{r res_model_replicas_pvn}
-ggplot(read.csv("model_entropy_simple_5_replicas.csv"), aes(x=nReplicas, y=pvn)) +
+analytical <- data.frame(
+  "n"=c(1,2,4,8,16,32,64),
+  "pos"=c(1,2,3,4,5,6,7),
+  "pcp"=c(0.097157,0.106840,0.107986,0.108000,0.10800,0.108000,0.108000),
+  "pvn"=c(0.097157,0.010380, 0.000121,0.000000,0.000000,0.000000,0.000000),
+  "modelo"="Analítico")
+
+ggplot(analytical, aes(x=pos, y=pvn)) +
   #geom_line(size=0.8, color=cOn) +
   #geom_point(size=2, color=cOn) +
   geom_bar(stat="identity", fill=cOn) +
-  scale_x_discrete(limits=1:10) +
+  scale_x_discrete(labels=analytical$n, limits=analytical$pos) +  # renaming pos by n
   scale_y_continuous(limit=0:1,breaks = seq(0,1,0.1), labels = function(x) paste0(x*100, "%")) +
   scale_color_manual(values=colors) +
   labs(x="Número de Réplicas", y="Perda de Vazão Normalizada") +
@@ -75,11 +82,18 @@ ggsave("res_model_replicas_pvn.png")
 ```
 
 ```{r res_model_replicas_pcp}
-ggplot(read.csv("model_entropy_simple_5_replicas.csv"), aes(x=nReplicas, y=pcp)) +
+analytical <- data.frame(
+  "n"=c(1,2,4,8,16,32,64),
+  "pos"=c(1,2,3,4,5,6,7),
+  "pcp"=c(0.097157,0.106840,0.107986,0.108000,0.10800,0.108000,0.108000),
+  "pvn"=c(0.097157,0.010380, 0.000121,0.000000,0.000000,0.000000,0.000000),
+  "modelo"="Analítico")
+
+ggplot(analytical, aes(x=pos, y=pcp)) +
   #geom_line(size=0.8, color=cOn) +
   #geom_point(size=2, color=cOn) +
   geom_bar(stat="identity", fill=cOn) +
-  scale_x_discrete(limits=1:10) +
+  scale_x_discrete(labels=analytical$n, limits=analytical$pos) +  # renaming pos by n
   scale_y_continuous(limit=0:1,breaks = seq(0,1,0.1), labels = function(x) paste0(x*100, "%")) +
   scale_color_manual(values=colors) +
   labs(x="Número de Réplicas", y="Perda de Capacidade de Processamento") +
